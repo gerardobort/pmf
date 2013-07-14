@@ -25,29 +25,61 @@
     };
 
     PMF.OneAxisGraph.prototype = {
-        _drawProbabilityNumber: function (number) { // 0 < number < 1
-            var x = number*this.canvas.width;
+        _drawProbabilityNumber: function (pmf) {
+            var t = pmf.random(),
+                // range can be defined from a to b, otherwise from 0 to 1
+                x = (pmf.a && pmf.b) ? (t - pmf.a)/(pmf.b - pmf.a) * this.canvas.width : t * this.canvas.width;
             this.ctx.fillRect(x, 0, 1, this.canvas.height);
         },
-        draw: function (probabilityMassFunction, options) {
+        draw: function (pmf, options) {
             options = options || {};
-            this.ctx.fillStyle = 'rgba(' + (options.r||255) + ', ' + (options.g||0) + ', ' + (options.b||0) + ', 0.2)';
+            this.ctx.fillStyle = 'rgba(' + (options.r||0) + ', ' + (options.g||0) + ', ' + (options.b||0) + ', 0.2)';
             for (var i = options.iterations||3*this.canvas.width; i > -1; i--) {
-                this._drawProbabilityNumber(probabilityMassFunction());
+                this._drawProbabilityNumber(pmf);
             }
         },
-        clear: function (probabilityMassFunction, options) {
+        clear: function () {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
     };
 
     PMF.Function = {};
-    PMF.Function.uniform = Math.random;
 
-    PMF.Function.testFunction = function () {
-        var x = PMF.Function.uniform();
-        var y = PMF.Function.uniform();
-        return x*y;
+    PMF.Function.uniform = {
+        random: Math.random,
+        pmf: function (x) { return 1; }
+    }
+
+    // Rejection Sampling Method | http://en.wikipedia.org/wiki/Rejection_sampling
+    // pmf = [4 - (x-4)^2]/k
+    PMF.Function.custom1Graph = {
+        k: 32/2, // calculated manually dong integration of pmf from a to b and equation it to 1 (accumulated function)
+        a: 2,
+        b: 6,
+        M: 3/8, // calculated given the actual k value
+        random: function () {
+            var r1, r2, x, y, f;
+            do {
+                r1 = PMF.Function.uniform.random(),
+                r2 = PMF.Function.uniform.random(),
+                x = 2 + 4 * r1,
+                y = this.M * r2,
+                f = (4 - Math.pow(x - 4, 2))/this.k;
+            } while (y > f);
+            return x;
+        },
+        pmf: function (x) {
+            return (4 - Math.pow(x - 4, 2))/this.k;
+        }
+    };
+
+    PMF.Function.custom2Graph = {
+        random: function () {
+            var x = PMF.Function.uniform.random();
+            var y = PMF.Function.uniform.random();
+            return x*-y+1;
+        },
+        pmf: function (x) { return 0; }
     };
 
     global.PMF = PMF;

@@ -57,14 +57,14 @@
         a: 2,
         b: 6,
         M: 3/8, // calculated given the actual k value
-        random: function () {
+        random: function () { // TODO this method can be extracted and reused
             var r1, r2, x, y, f;
             do {
                 r1 = PMF.Function.uniform.random(),
                 r2 = PMF.Function.uniform.random(),
-                x = 2 + 4 * r1,
+                x = this.a + (this.b - this.a) * r1,
                 y = this.M * r2,
-                f = (4 - Math.pow(x - 4, 2))/this.k;
+                f = this.pmf(x);
             } while (y > f);
             return x;
         },
